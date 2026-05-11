@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pong Game</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .game-container {
+            position: relative;
+        }
+
+        canvas {
+            border: 2px solid #fff;
+            background-color: black;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <canvas id="pong"></canvas>
+    </div>
+    <script>
+        // Obter o canvas e o contexto
+        const canvas = document.getElementById('pong');
+        const context = canvas.getContext('2d');
+
+        // Definir o tamanho do canvas
+        canvas.width = 800;
+        canvas.height = 400;
+
+        // Criar objetos do jogo
+        const paddleWidth = 10;
+        const paddleHeight = 100;
+        let ballRadius = 8;
+
+        // Paddles
+        const user = {
+            x: 0,
+            y: canvas.height / 2 - paddleHeight / 2,
+            width: paddleWidth,
+            height: paddleHeight,
+            color: '#fff',
+            dy: 0
+        };
+
+        const computer = {
+            x: canvas.width - paddleWidth,
+            y: canvas.height / 2 - paddleHeight / 2,
+            width: paddleWidth,
+            height: paddleHeight,
+            color: '#fff',
+            dy: 0
+        };
+
+        // Bola
+        const ball = {
+            x: canvas.width / 2,
+            y: canvas.height / 2,
+            radius: ballRadius,
+            speed: 4,
+            dx: 4,
+            dy: 4,
+            color: '#fff'
+        };
+
+        // Desenhar o retângulo
+        function drawPaddle(x, y, width, height, color) {
+            context.fillStyle = color;
+            context.fillRect(x, y, width, height);
+        }
+
+        // Desenhar a bola
+        function drawBall(x, y, radius, color) {
+            context.fillStyle = color;
+            context.beginPath();
+            context.arc(x, y, radius, 0, Math.PI * 2, false);
+            context.closePath();
+            context.fill();
+        }
+
+        // Movimento da bola
+        function moveBall() {
+            ball.x += ball.dx;
+            ball.y += ball.dy;
+
+            // Colisão com as paredes superior e inferior
+            if (ball.y + ball.radius > canvas.height || ball.y - ball.radius < 0) {
+                ball.dy = -ball.dy;
+            }
+
+            // Colisão com o paddle do usuário
+            if (ball.x - ball.radius < user.x + user.width &&
+                ball.y > user.y && ball.y < user.y + user.height) {
+                ball.dx = -ball.dx;
+            }
+
+            // Colisão com o paddle do computador
+            if (ball.x + ball.radius > computer.x &&
+                ball.y > computer.y && ball.y < computer.y + computer.height) {
+                ball.dx = -ball.dx;
+            }
+
+            // Se a bola passar pela borda (pontos)
+            if (ball.x + ball.radius > canvas.width) {
+                // Ponto para o usuário
+                resetBall();
+            } else if (ball.x - ball.radius < 0) {
+                // Ponto para o computador
+                resetBall();
+            }
+        }
+
+        // Resetar a posição da bola
+        function resetBall() {
+            ball.x = canvas.width / 2;
+            ball.y = canvas.height / 2;
+            ball.dx = -ball.dx;
+            ball.dy = 4;
+        }
+
+        // Movimento do paddle do usuário
+        function moveUser() {
+            user.y += user.dy;
+
+            if (user.y < 0) user.y = 0;
+            if (user.y + user.height > canvas.height) user.y = canvas.height - user.height;
+        }
+
+        // Movimento do paddle do computador
+        function moveComputer() {
+            if (ball.y < computer.y + computer.height / 2) {
+                computer.y -= 4;
+            } else {
+                computer.y += 4;
+            }
+
+            if (computer.y < 0) computer.y = 0;
+            if (computer.y + computer.height > canvas.height) computer.y = canvas.height - computer.height;
+        }
+
+        // Atualizar o jogo
+        function update() {
+            moveBall();
+            moveUser();
+            moveComputer();
+
+            // Desenhar o fundo
+            context.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Desenhar paddles e bola
+            drawPaddle(user.x, user.y, user.width, user.height, user.color);
+            drawPaddle(computer.x, computer.y, computer.width, computer.height, computer.color);
+            drawBall(ball.x, ball.y, ball.radius, ball.color);
+
+            // Atualizar a tela
+            requestAnimationFrame(update);
+        }
+
+        // Detectar teclas pressionadas
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'ArrowUp') {
+                user.dy = -4;
+            } else if (event.key === 'ArrowDown') {
+                user.dy = 4;
+            }
+        });
+
+        // Detectar teclas soltas
+        document.addEventListener('keyup', (event) => {
+            if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
+                user.dy = 0;
+            }
+        });
+
+        // Iniciar o jogo
+        update();
+    </script>
+</body>
+</html>
