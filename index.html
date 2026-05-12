@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pong Game - Velocidade Progressiva</title>
+    <title>Pong Game - 100% Automático</title>
     <style>
         * {
             margin: 0;
@@ -44,26 +44,25 @@
         const paddleHeight = 100;
         let ballRadius = 8;
         
-        // --- NOVIDADE: Velocidade inicial e incremento ---
         const velocidadeInicial = 4;
-        const fatorAumento = 1.1; // Aumenta 10% a cada batida
+        const fatorAumento = 1.1; 
 
-        const user = {
+        // Lado Esquerdo (Antigo Usuário, agora IA)
+        const leftPaddle = {
             x: 0,
             y: canvas.height / 2 - paddleHeight / 2,
             width: paddleWidth,
             height: paddleHeight,
-            color: '#fff',
-            dy: 0
+            color: '#fff'
         };
 
-        const computer = {
+        // Lado Direito (Computador)
+        const rightPaddle = {
             x: canvas.width - paddleWidth,
             y: canvas.height / 2 - paddleHeight / 2,
             width: paddleWidth,
             height: paddleHeight,
-            color: '#fff',
-            dy: 0
+            color: '#fff'
         };
 
         const ball = {
@@ -96,22 +95,21 @@
                 ball.dy = -ball.dy;
             }
 
-            // Colisão Usuário + Aumento de Velocidade
-            if (ball.x - ball.radius < user.x + user.width &&
-                ball.y > user.y && ball.y < user.y + user.height) {
-                ball.dx = -ball.dx;
+            // Colisão Lado Esquerdo
+            if (ball.x - ball.radius < leftPaddle.x + leftPaddle.width &&
+                ball.y > leftPaddle.y && ball.y < leftPaddle.y + leftPaddle.height) {
+                ball.dx = Math.abs(ball.dx); // Garante que a bola vá para a direita
                 
-                // Aumenta a velocidade se não estiver muito rápida (limite de 15)
                 if (Math.abs(ball.dx) < 15) {
                     ball.dx *= fatorAumento;
                     ball.dy *= fatorAumento;
                 }
             }
 
-            // Colisão Computador + Aumento de Velocidade
-            if (ball.x + ball.radius > computer.x &&
-                ball.y > computer.y && ball.y < computer.y + computer.height) {
-                ball.dx = -ball.dx;
+            // Colisão Lado Direito
+            if (ball.x + ball.radius > rightPaddle.x &&
+                ball.y > rightPaddle.y && ball.y < rightPaddle.y + rightPaddle.height) {
+                ball.dx = -Math.abs(ball.dx); // Garante que a bola vá para a esquerda
 
                 if (Math.abs(ball.dx) < 15) {
                     ball.dx *= fatorAumento;
@@ -124,53 +122,45 @@
             }
         }
 
-        // Função reset alterada para voltar à velocidade original
         function resetBall() {
             ball.x = canvas.width / 2;
             ball.y = canvas.height / 2;
-            
-            // Inverte o lado que a bola começa, mas reseta a força para o padrão
             ball.dx = (ball.dx > 0) ? -velocidadeInicial : velocidadeInicial;
             ball.dy = velocidadeInicial;
         }
 
-        function moveUser() {
-            user.y += user.dy;
-            if (user.y < 0) user.y = 0;
-            if (user.y + user.height > canvas.height) user.y = canvas.height - user.height;
+        // IA para o lado esquerdo
+        function moveLeftAI() {
+            let alvo = ball.y - leftPaddle.height / 2;
+            // O valor 0.1 define a suavidade/velocidade da IA
+            leftPaddle.y += (alvo - leftPaddle.y) * 0.1;
+
+            if (leftPaddle.y < 0) leftPaddle.y = 0;
+            if (leftPaddle.y + leftPaddle.height > canvas.height) leftPaddle.y = canvas.height - leftPaddle.height;
         }
 
-        function moveComputer() {
-            // IA ligeiramente mais suave para acompanhar a bola rápida
-            let alvoIA = ball.y - computer.height / 2;
-            computer.y += (alvoIA - computer.y) * 0.1;
+        // IA para o lado direito
+        function moveRightAI() {
+            let alvo = ball.y - rightPaddle.height / 2;
+            rightPaddle.y += (alvo - rightPaddle.y) * 0.1;
 
-            if (computer.y < 0) computer.y = 0;
-            if (computer.y + computer.height > canvas.height) computer.y = canvas.height - computer.height;
+            if (rightPaddle.y < 0) rightPaddle.y = 0;
+            if (rightPaddle.y + rightPaddle.height > canvas.height) rightPaddle.y = canvas.height - rightPaddle.height;
         }
 
         function update() {
             moveBall();
-            moveUser();
-            moveComputer();
+            moveLeftAI();
+            moveRightAI();
 
             context.clearRect(0, 0, canvas.width, canvas.height);
 
-            drawPaddle(user.x, user.y, user.width, user.height, user.color);
-            drawPaddle(computer.x, computer.y, computer.width, computer.height, computer.color);
+            drawPaddle(leftPaddle.x, leftPaddle.y, leftPaddle.width, leftPaddle.height, leftPaddle.color);
+            drawPaddle(rightPaddle.x, rightPaddle.y, rightPaddle.width, rightPaddle.height, rightPaddle.color);
             drawBall(ball.x, ball.y, ball.radius, ball.color);
 
             requestAnimationFrame(update);
         }
-
-        document.addEventListener('keydown', (event) => {
-            if (event.key === 'ArrowUp') user.dy = -6;
-            else if (event.key === 'ArrowDown') user.dy = 6;
-        });
-
-        document.addEventListener('keyup', (event) => {
-            if (event.key === 'ArrowUp' || event.key === 'ArrowDown') user.dy = 0;
-        });
 
         update();
     </script>
