@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pong Game - 100% Automático</title>
+    <title>Pong Game com Placar</title>
     <style>
         * {
             margin: 0;
@@ -17,22 +17,19 @@
             justify-content: center;
             align-items: center;
             height: 100vh;
-        }
-
-        .game-container {
-            position: relative;
+            overflow: hidden;
         }
 
         canvas {
-            border: 2px solid #fff;
+            border: 4px solid #fff;
             background-color: black;
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
         }
     </style>
 </head>
 <body>
-    <div class="game-container">
-        <canvas id="pong"></canvas>
-    </div>
+    <canvas id="pong"></canvas>
+
     <script>
         const canvas = document.getElementById('pong');
         const context = canvas.getContext('2d');
@@ -40,39 +37,61 @@
         canvas.width = 800;
         canvas.height = 400;
 
+        // Configurações do Jogo
         const paddleWidth = 10;
         const paddleHeight = 100;
-        let ballRadius = 8;
-        
-        const velocidadeInicial = 4;
-        const fatorAumento = 1.1; 
+        const INITIAL_SPEED = 4;
+        const SPEED_INCREMENT = 1.1;
 
-        // Lado Esquerdo (Antigo Usuário, agora IA)
-        const leftPaddle = {
+        // Placar
+        let userScore = 0;
+        let computerScore = 0;
+
+        const user = {
             x: 0,
             y: canvas.height / 2 - paddleHeight / 2,
             width: paddleWidth,
             height: paddleHeight,
-            color: '#fff'
+            color: '#fff',
+            dy: 0
         };
 
-        // Lado Direito (Computador)
-        const rightPaddle = {
+        const computer = {
             x: canvas.width - paddleWidth,
             y: canvas.height / 2 - paddleHeight / 2,
             width: paddleWidth,
             height: paddleHeight,
-            color: '#fff'
+            color: '#fff',
+            dy: 0
         };
 
         const ball = {
             x: canvas.width / 2,
             y: canvas.height / 2,
-            radius: ballRadius,
-            dx: velocidadeInicial,
-            dy: velocidadeInicial,
+            radius: 8,
+            dx: INITIAL_SPEED,
+            dy: INITIAL_SPEED,
             color: '#fff'
         };
+
+        // Função para desenhar o Placar
+        function drawScore() {
+            context.fillStyle = "#fff";
+            context.font = "45px Arial";
+            // Pontos do Usuário (lado esquerdo)
+            context.fillText(userScore, canvas.width / 4, 50);
+            // Pontos do Computador (lado direito)
+            context.fillText(computerScore, 3 * canvas.width / 4, 50);
+            
+            // Linha tracejada no meio
+            context.setLineDash([10, 10]);
+            context.beginPath();
+            context.moveTo(canvas.width / 2, 0);
+            context.lineTo(canvas.width / 2, canvas.height);
+            context.strokeStyle = "#fff";
+            context.stroke();
+            context.setLineDash([]); // Reset do tracejado
+        }
 
         function drawPaddle(x, y, width, height, color) {
             context.fillStyle = color;
@@ -82,85 +101,91 @@
         function drawBall(x, y, radius, color) {
             context.fillStyle = color;
             context.beginPath();
-            context.arc(x, y, radius, 0, Math.PI * 2, false);
-            context.closePath();
+            context.arc(x, y, radius, 0, Math.PI * 2);
             context.fill();
+        }
+
+        function resetBall() {
+            ball.x = canvas.width / 2;
+            ball.y = canvas.height / 2;
+            // Inverte direção e reseta velocidade
+            ball.dx = (ball.dx > 0 ? -1 : 1) * INITIAL_SPEED;
+            ball.dy = INITIAL_SPEED * (Math.random() > 0.5 ? 1 : -1);
         }
 
         function moveBall() {
             ball.x += ball.dx;
             ball.y += ball.dy;
 
+            // Colisão teto e chão
             if (ball.y + ball.radius > canvas.height || ball.y - ball.radius < 0) {
                 ball.dy = -ball.dy;
             }
 
-            // Colisão Lado Esquerdo
-            if (ball.x - ball.radius < leftPaddle.x + leftPaddle.width &&
-                ball.y > leftPaddle.y && ball.y < leftPaddle.y + leftPaddle.height) {
-                ball.dx = Math.abs(ball.dx); // Garante que a bola vá para a direita
-                
-                if (Math.abs(ball.dx) < 15) {
-                    ball.dx *= fatorAumento;
-                    ball.dy *= fatorAumento;
+            // Colisão Raquetes + Aumento de velocidade
+            let player = (ball.x < canvas.width / 2) ? user : computer;
+            
+            if (checkCollision(ball, player)) {
+                ball.dx = -ball.dx;
+                // Aumenta velocidade até um limite
+                if (Math.abs(ball.dx) < 16) {
+                    ball.dx *= SPEED_INCREMENT;
+                    ball.dy *= SPEED_INCREMENT;
                 }
             }
 
-            // Colisão Lado Direito
-            if (ball.x + ball.radius > rightPaddle.x &&
-                ball.y > rightPaddle.y && ball.y < rightPaddle.y + rightPaddle.height) {
-                ball.dx = -Math.abs(ball.dx); // Garante que a bola vá para a esquerda
-
-                if (Math.abs(ball.dx) < 15) {
-                    ball.dx *= fatorAumento;
-                    ball.dy *= fatorAumento;
-                }
-            }
-
-            if (ball.x + ball.radius > canvas.width || ball.x - ball.radius < 0) {
+            // PONTUAÇÃO
+            if (ball.x + ball.radius > canvas.width) {
+                userScore++; // Ponto para você
+                resetBall();
+            } else if (ball.x - ball.radius < 0) {
+                computerScore++; // Ponto para a IA
                 resetBall();
             }
         }
 
-        function resetBall() {
-            ball.x = canvas.width / 2;
-            ball.y = canvas.height / 2;
-            ball.dx = (ball.dx > 0) ? -velocidadeInicial : velocidadeInicial;
-            ball.dy = velocidadeInicial;
+        function checkCollision(b, p) {
+            return b.x + b.radius > p.x && b.x - b.radius < p.x + p.width &&
+                   b.y + b.radius > p.y && b.y - b.radius < p.y + p.height;
         }
 
-        // IA para o lado esquerdo
-        function moveLeftAI() {
-            let alvo = ball.y - leftPaddle.height / 2;
-            // O valor 0.1 define a suavidade/velocidade da IA
-            leftPaddle.y += (alvo - leftPaddle.y) * 0.1;
-
-            if (leftPaddle.y < 0) leftPaddle.y = 0;
-            if (leftPaddle.y + leftPaddle.height > canvas.height) leftPaddle.y = canvas.height - leftPaddle.height;
+        function moveUser() {
+            user.y += user.dy;
+            if (user.y < 0) user.y = 0;
+            if (user.y + user.height > canvas.height) user.y = canvas.height - user.height;
         }
 
-        // IA para o lado direito
-        function moveRightAI() {
-            let alvo = ball.y - rightPaddle.height / 2;
-            rightPaddle.y += (alvo - rightPaddle.y) * 0.1;
-
-            if (rightPaddle.y < 0) rightPaddle.y = 0;
-            if (rightPaddle.y + rightPaddle.height > canvas.height) rightPaddle.y = canvas.height - rightPaddle.height;
+        function moveComputer() {
+            let targetY = ball.y - computer.height / 2;
+            computer.y += (targetY - computer.y) * 0.1; // Inteligência da IA
+            if (computer.y < 0) computer.y = 0;
+            if (computer.y + computer.height > canvas.height) computer.y = canvas.height - computer.height;
         }
 
         function update() {
             moveBall();
-            moveLeftAI();
-            moveRightAI();
+            moveUser();
+            moveComputer();
 
             context.clearRect(0, 0, canvas.width, canvas.height);
-
-            drawPaddle(leftPaddle.x, leftPaddle.y, leftPaddle.width, leftPaddle.height, leftPaddle.color);
-            drawPaddle(rightPaddle.x, rightPaddle.y, rightPaddle.width, rightPaddle.height, rightPaddle.color);
+            
+            drawScore(); // Desenha o placar e a linha do meio
+            drawPaddle(user.x, user.y, user.width, user.height, user.color);
+            drawPaddle(computer.x, computer.y, computer.width, computer.height, computer.color);
             drawBall(ball.x, ball.y, ball.radius, ball.color);
 
             requestAnimationFrame(update);
         }
+
+        // Controles do teclado
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowUp') user.dy = -7;
+            if (e.key === 'ArrowDown') user.dy = 7;
+        });
+
+        document.addEventListener('keyup', (e) => {
+            if (e.key === 'ArrowUp' || e.key === 'ArrowDown') user.dy = 0;
+        });
 
         update();
     </script>
