@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pong Game com Placar</title>
+    <title>Pong Game - Auto vs Auto</title>
     <style>
         * {
             margin: 0;
@@ -37,13 +37,11 @@
         canvas.width = 800;
         canvas.height = 400;
 
-        // Configurações do Jogo
         const paddleWidth = 10;
         const paddleHeight = 100;
         const INITIAL_SPEED = 4;
         const SPEED_INCREMENT = 1.1;
 
-        // Placar
         let userScore = 0;
         let computerScore = 0;
 
@@ -74,23 +72,19 @@
             color: '#fff'
         };
 
-        // Função para desenhar o Placar
         function drawScore() {
             context.fillStyle = "#fff";
             context.font = "45px Arial";
-            // Pontos do Usuário (lado esquerdo)
             context.fillText(userScore, canvas.width / 4, 50);
-            // Pontos do Computador (lado direito)
             context.fillText(computerScore, 3 * canvas.width / 4, 50);
             
-            // Linha tracejada no meio
             context.setLineDash([10, 10]);
             context.beginPath();
             context.moveTo(canvas.width / 2, 0);
             context.lineTo(canvas.width / 2, canvas.height);
             context.strokeStyle = "#fff";
             context.stroke();
-            context.setLineDash([]); // Reset do tracejado
+            context.setLineDash([]);
         }
 
         function drawPaddle(x, y, width, height, color) {
@@ -108,7 +102,6 @@
         function resetBall() {
             ball.x = canvas.width / 2;
             ball.y = canvas.height / 2;
-            // Inverte direção e reseta velocidade
             ball.dx = (ball.dx > 0 ? -1 : 1) * INITIAL_SPEED;
             ball.dy = INITIAL_SPEED * (Math.random() > 0.5 ? 1 : -1);
         }
@@ -117,29 +110,25 @@
             ball.x += ball.dx;
             ball.y += ball.dy;
 
-            // Colisão teto e chão
             if (ball.y + ball.radius > canvas.height || ball.y - ball.radius < 0) {
                 ball.dy = -ball.dy;
             }
 
-            // Colisão Raquetes + Aumento de velocidade
             let player = (ball.x < canvas.width / 2) ? user : computer;
             
             if (checkCollision(ball, player)) {
                 ball.dx = -ball.dx;
-                // Aumenta velocidade até um limite
                 if (Math.abs(ball.dx) < 16) {
                     ball.dx *= SPEED_INCREMENT;
                     ball.dy *= SPEED_INCREMENT;
                 }
             }
 
-            // PONTUAÇÃO
             if (ball.x + ball.radius > canvas.width) {
-                userScore++; // Ponto para você
+                userScore++;
                 resetBall();
             } else if (ball.x - ball.radius < 0) {
-                computerScore++; // Ponto para a IA
+                computerScore++;
                 resetBall();
             }
         }
@@ -149,15 +138,20 @@
                    b.y + b.radius > p.y && b.y - b.radius < p.y + p.height;
         }
 
+        // --- ALTERAÇÃO AQUI: Lado esquerdo automático ---
         function moveUser() {
-            user.y += user.dy;
+            let targetY = ball.y - user.height / 2;
+            // O valor 0.08 torna ele um pouco menos perfeito que o outro lado (opcional)
+            user.y += (targetY - user.y) * 0.08; 
+
             if (user.y < 0) user.y = 0;
             if (user.y + user.height > canvas.height) user.y = canvas.height - user.height;
         }
 
         function moveComputer() {
             let targetY = ball.y - computer.height / 2;
-            computer.y += (targetY - computer.y) * 0.1; // Inteligência da IA
+            computer.y += (targetY - computer.y) * 0.1; 
+
             if (computer.y < 0) computer.y = 0;
             if (computer.y + computer.height > canvas.height) computer.y = canvas.height - computer.height;
         }
@@ -169,7 +163,7 @@
 
             context.clearRect(0, 0, canvas.width, canvas.height);
             
-            drawScore(); // Desenha o placar e a linha do meio
+            drawScore();
             drawPaddle(user.x, user.y, user.width, user.height, user.color);
             drawPaddle(computer.x, computer.y, computer.width, computer.height, computer.color);
             drawBall(ball.x, ball.y, ball.radius, ball.color);
@@ -177,16 +171,7 @@
             requestAnimationFrame(update);
         }
 
-        // Controles do teclado
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'ArrowUp') user.dy = -7;
-            if (e.key === 'ArrowDown') user.dy = 7;
-        });
-
-        document.addEventListener('keyup', (e) => {
-            if (e.key === 'ArrowUp' || e.key === 'ArrowDown') user.dy = 0;
-        });
-
+        // Removi os EventListeners de teclado pois agora é 100% automático
         update();
     </script>
 </body>
